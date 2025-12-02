@@ -237,7 +237,7 @@ func (c *Campaign) getDetails() error {
 		log.Warnf("%s: events not found for campaign", err)
 		return err
 	}
-	err = db.Preload("Scenarios.Templates").Preload("Scenarios.Templates.Attachments").First(&c, c.Id).Error
+	err = db.Preload("Scenarios.Templates").Preload("Scenarios.Templates.Attachments").Preload("Scenarios.Page").First(&c, c.Id).Error
 	if err != nil {
 		log.Warnf("%s: scenarios not found for campaign", err)
 		return err
