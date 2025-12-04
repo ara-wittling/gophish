@@ -34,7 +34,7 @@ type Campaign struct {
 	Teams         []TeamSummary `json:"teams" gorm:"-"`
 	StartTime     time.Time     `json:"start_time"`
 	EndTime       time.Time     `json:"end_time"`
-	Location  	  string		`json:"location"`
+	Location      string        `json:"location"`
 }
 
 // CampaignResults is a struct representing the results from a campaign
@@ -287,12 +287,12 @@ func (c *Campaign) assignSendDate(idx int, timeSlots []time.Time) time.Time {
 
 // helper function for time location
 func (c *Campaign) resolveLoc() *time.Location {
-    if c.Location != "" {
-        if l, err := time.LoadLocation(c.Location); err == nil {
-            return l
-        }
-    }
-    return time.UTC
+	if c.Location != "" {
+		if l, err := time.LoadLocation(c.Location); err == nil {
+			return l
+		}
+	}
+	return time.UTC
 }
 
 // Generates timeSlots. When timeSlots are generated the startHour and endHour defined at Campaign creation is ignored, but instead only whole days between 9 to 5 are regarded.
