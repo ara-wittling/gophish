@@ -1,49 +1,71 @@
-name: docker-release
+name: Publish Docker image
 
 on:
   push:
 
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE_NAME: ghcr.io/${{ github.repository }}
+
 jobs:
-  docker:
+  build-and-push:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@v2
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v2
+
+      - name: Determine image tag
+        id: vars
+        run: |
+          # For release events, read the tag name from the event payload.
+          # Fallback to a short commit SHA if tag name is empty/null.
+          TAG=$(jq -r .release.tag_name < "$GITHUB_EVENT_PATH" 2>/dev/null || echo "")
+          if [ -z "$TAG" ] || [ "$TAG" = "null" ]; then
+            TAG=${GITHUB_SHA::8}
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v2
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-        
-      - name: Prepare image names and tags
-        id: vars
-        env:
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
-        run: |
-          # Remove leading 'v' if present to create a short tag (v1.2.3 -> 1.2.3)
-          SHORT_TAG=${RELEASE_TAG#v}
-          echo "release_tag=$RELEASE_TAG" >> $GITHUB_OUTPUT
-          echo "short_tag=$SHORT_TAG" >> $GITHUB_OUTPUT
-          echo "ghcr_image=ghcr.io/${{ github.repository_owner }}/gophish" >> $GITHUB_OUTPUT
-          # dockerhub_image will be empty if DOCKERHUB_USERNAME is not set
-          echo "dockerhub_image=${{ secrets.DOCKERHUB_USERNAME }}/gophish" >> $GITHUB_OUTPUT
 
-      - name: Build and push to GitHub Container Registry (ghcr.io)
-        uses: docker/build-push-action@v6
+      - name: Build and push to GHCR
+        uses: docker/build-push-action@v4
         with:
           context: .
-          file: ./Dockerfile
-          platforms: linux/amd64
           push: true
+          platforms: linux/amd64,linux/arm64
           tags: |
-            ${{ steps.vars.outputs.ghcr_image }}:${{ steps.vars.outputs.release_tag }}
-            ${{ steps.vars.outputs.ghcr_image }}:${{ steps.vars.outputs.short_tag }}
-            ${{ steps.vars.outputs.ghcr_image }}:latest
+            ${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.tag }}
+            ${{ env.IMAGE_NAME }}:latest
+
+      - name: Optional: Log in to Docker Hub
+        if: ${{ secrets.DOCKERHUB_USERNAME && secrets.DOCKERHUB_TOKEN }}
+        uses: docker/login-action@v2
+        with:
+          registry: docker.io
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Optional: Push to Docker Hub
+        if: ${{ secrets.DOCKERHUB_USERNAME && secrets.DOCKERHUB_TOKEN }}
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            docker.io/${{ secrets.DOCKERHUB_USERNAME }}/gophish:${{ steps.vars.outputs.tag }}
+            docker.io/${{ secrets.DOCKERHUB_USERNAME }}/gophish:latest
