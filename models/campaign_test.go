@@ -419,7 +419,7 @@ func (s *ModelsSuite) TestPostCampaignAppliesTimezoneToDates(c *check.C) {
 
 func (s *ModelsSuite) TestGenerateTimeSlotsRespectsLocation(c *check.C) {
 	loc, err := time.LoadLocation("Europe/Berlin")
-	c.Assert(err, check.Equals, nil)
+	c.Assert(err, check.IsNil)
 
 	launch := time.Date(2030, time.January, 1, 0, 0, 0, 0, loc)
 	sendBy := time.Date(2030, time.January, 5, 0, 0, 0, 0, loc)
