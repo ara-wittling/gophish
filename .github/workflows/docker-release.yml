@@ -6,10 +6,13 @@ on:
       # for testing purpose
       - docker
 
+env:
+  IMAGE_NAME: ghcr.io/${{ github.repository }}
+
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -27,7 +30,7 @@ jobs:
       - name: Extract current version from package.json
         id: get-version
         run: |
-          version=$(node -p "require('./package.json').version.replace('-dev', '')")
+          version=$(node -p "require('./package.json').version")
           echo "VERSION=$version" >> $GITHUB_ENV  
 
       - name: Log in to GitHub Container Registry
@@ -45,6 +48,6 @@ jobs:
           # platforms: linux/amd64,linux/arm64
           platforms: linux/amd64
           tags: |
-            ${{ env.REPO_NAME }}:${{ env.VERSION }}
-            ${{ env.REPO_NAME }}:latest
+            ${{ env.IMAGE_NAME }}:${{ env.VERSION }}
+            ${{ env.IMAGE_NAME }}:latest
 
