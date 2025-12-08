@@ -427,14 +427,14 @@ func (s *ModelsSuite) TestGenerateTimeSlotsRespectsLocation(c *check.C) {
 	campaign := Campaign{
 		LaunchDate: launch,
 		SendByDate: sendBy,
-		StartTime: time.Date(launch.Year(), launch.Month(), launch.Day(), 9, 0, 0, 0, time.UTC),
-		EndTime:   time.Date(sendBy.Year(), sendBy.Month(), sendBy.Day(), 17, 0, 0, 0, time.UTC),
-		Location:  "Europe/Berlin",
+		StartTime:  time.Date(launch.Year(), launch.Month(), launch.Day(), 9, 0, 0, 0, time.UTC),
+		EndTime:    time.Date(sendBy.Year(), sendBy.Month(), sendBy.Day(), 17, 0, 0, 0, time.UTC),
+		Location:   "Europe/Berlin",
 	}
 
 	totalRecipients := 20
 	slots := campaign.generateTimeSlots(totalRecipients)
-	
+
 	assertSlotsWithinWindow(c, slots, loc, launch, sendBy, 9, 17)
 }
 
