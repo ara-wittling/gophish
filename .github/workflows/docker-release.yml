@@ -27,7 +27,7 @@ jobs:
       - name: Extract current version from package.json
         id: get-version
         run: |
-          version=$(node -p "require('./package.json').version")
+          version=$(node -p "require('./package.json').version.replace('-dev', '')")
           echo "VERSION=$version" >> $GITHUB_ENV  
 
       - name: Log in to GitHub Container Registry
