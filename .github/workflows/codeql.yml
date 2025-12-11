@@ -28,7 +28,7 @@ jobs:
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
         with:
-          languages: go, javascript-typescript
+          languages: go
           build-mode: ${{ matrix.build-mode }}
 
       - name: Perform CodeQL Analysis
