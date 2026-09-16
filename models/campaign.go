@@ -915,10 +915,10 @@ func DeleteCampaign(id int64) error {
 	}
 	// Delete all the relations between the campaigns and scenarios
 	err = tx.Where("campaign_id=?", id).Delete(&CampaignScenarios{}).Error
-    if err != nil {
-        tx.Rollback()
-        return err
-    }
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
 	// Delete the campaign
 	err = tx.Delete(&Campaign{Id: id}).Error
 	if err != nil {
