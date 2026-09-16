@@ -61,6 +61,25 @@ func (s *ModelsSuite) TestGetScenario(c *check.C) {
 	c.Assert(scenario.Name, check.Equals, sc.Name)
 }
 
+func (s *ModelsSuite) TestDeleteScenarioDeletesOnlyItsRelations(c *check.C) {
+	target := s.createScenarioDependencies(c)
+	c.Assert(PostScenario(&target, target.UserId), check.Equals, nil)
+
+	other := s.createScenarioDependencies(c)
+	c.Assert(PostScenario(&other, other.UserId), check.Equals, nil)
+
+	c.Assert(DeleteScenario(target.Id), check.Equals, nil)
+
+	var count int64
+	err := db.Model(&ScenarioTemplates{}).Where("scenario_id = ?", target.Id).Count(&count).Error
+	c.Assert(err, check.Equals, nil)
+	c.Assert(count, check.Equals, int64(0))
+
+	err = db.Model(&ScenarioTemplates{}).Where("scenario_id = ?", other.Id).Count(&count).Error
+	c.Assert(err, check.Equals, nil)
+	c.Assert(count, check.Equals, int64(1))
+}
+
 func (s *ModelsSuite) TestScenarioValidation(c *check.C) {
 	t := Template{Name: "Test Template"}
 	t.Subject = "{{.RId}} - Subject"

@@ -321,11 +321,23 @@ func (s *ModelsSuite) TestLaunchCampaignMaillogStatus(c *check.C) {
 	}
 }
 
-func (s *ModelsSuite) TestDeleteCampaignAlsoDeletesMailLogs(c *check.C) {
+func (s *ModelsSuite) TestDeleteCampaignAlsoDeletesRelations(c *check.C) {
 	campaign := s.createCampaign(c)
 	ms, err := GetMailLogsByCampaign(campaign.Id)
 	c.Assert(err, check.Equals, nil)
 	c.Assert(len(ms), check.Equals, len(campaign.Results))
+
+	var scenarioRelations int64
+	err = db.Model(&CampaignScenarios{}).Where("campaign_id = ?", campaign.Id).Count(&scenarioRelations).Error
+	c.Assert(err, check.Equals, nil)
+	c.Assert(scenarioRelations, check.Equals, int64(len(campaign.Scenarios)))
+
+	otherCampaign := Campaign{Name: "Campaign that must be preserved", UserId: campaign.UserId}
+	c.Assert(db.Create(&otherCampaign).Error, check.Equals, nil)
+	c.Assert(db.Create(&CampaignScenarios{
+		CampaignId: otherCampaign.Id,
+		ScenarioId: campaign.Scenarios[0].Id,
+	}).Error, check.Equals, nil)
 
 	err = DeleteCampaign(campaign.Id)
 	c.Assert(err, check.Equals, nil)
@@ -333,6 +345,27 @@ func (s *ModelsSuite) TestDeleteCampaignAlsoDeletesMailLogs(c *check.C) {
 	ms, err = GetMailLogsByCampaign(campaign.Id)
 	c.Assert(err, check.Equals, nil)
 	c.Assert(len(ms), check.Equals, 0)
+
+	err = db.Model(&CampaignScenarios{}).Where("campaign_id = ?", campaign.Id).Count(&scenarioRelations).Error
+	c.Assert(err, check.Equals, nil)
+	c.Assert(scenarioRelations, check.Equals, int64(0))
+	err = db.Model(&CampaignScenarios{}).Where("campaign_id = ?", otherCampaign.Id).Count(&scenarioRelations).Error
+	c.Assert(err, check.Equals, nil)
+	c.Assert(scenarioRelations, check.Equals, int64(1))
+}
+
+func (s *ModelsSuite) TestDeleteCampaignScenarioAndTemplateInSequence(c *check.C) {
+	campaign := s.createCampaign(c)
+	scenario := campaign.Scenarios[0]
+	template := scenario.Templates[0]
+
+	c.Assert(DeleteCampaign(campaign.Id), check.Equals, nil)
+	c.Assert(GetScenarioCampaignsCount(scenario.Id), check.Equals, int64(0))
+
+	c.Assert(DeleteScenario(scenario.Id), check.Equals, nil)
+	c.Assert(GetTemplateScenariosCount(template.Id), check.Equals, int64(0))
+
+	c.Assert(DeleteTemplate(template.Id, template.UserId), check.Equals, nil)
 }
 
 func (s *ModelsSuite) TestCompleteCampaignAlsoDeletesMailLogs(c *check.C) {
