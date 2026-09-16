@@ -343,6 +343,13 @@ func DeleteScenario(id int64) error {
 		log.Error(err)
 		return err
 	}
+	// Delete all the relations between the scenarios and templates
+	err = tx.Where("scenario_id = ?", id).Delete(&ScenarioTemplates{}).Error
+	if err != nil {
+		tx.Rollback()
+		log.Error(err)
+		return err
+	}
 	// Delete the scenario
 	err = tx.Delete(&Scenario{Id: id}).Error
 	if err != nil {
